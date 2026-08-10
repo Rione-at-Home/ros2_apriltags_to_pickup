@@ -23,6 +23,7 @@ setup(
             'driver_node = ros2_pickup_w_apriltags.crane_driver_node:main',
             'gui_node = ros2_pickup_w_apriltags.gui:main',
             'challenge_node = ros2_pickup_w_apriltags.challenge_node:main',
+            'detector_node = ros2_pickup_w_apriltags.tag_detector_node:main',
         ],
     },
 )
