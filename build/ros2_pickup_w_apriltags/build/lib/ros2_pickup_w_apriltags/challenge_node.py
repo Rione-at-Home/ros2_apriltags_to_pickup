@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-
-#
-## challenge_node.py
-#
-#  This program defines the main node for the challenge. It initializes the 
-#  robot and provides a template for implementing the challenge solution.
-#
-#
-
-#!/usr/bin/env python3
 import enum
 import rclpy
 from rclpy.node import Node
@@ -38,6 +28,7 @@ class ChallengeNode(Node):
 
         # Camera feedback data
         self.target_visible = False
+        self.last_tag_time = self.get_clock().now()
         self.target_x_offset = 0.0  # Horizontal alignment error (meters)
         self.target_z_dist = 0.0    # Distance to tag (meters)
         self.target_id = -1          # Tag ID (0 = Left/Recycling, 1 = Right/Trash)
@@ -67,64 +58,69 @@ class ChallengeNode(Node):
         self.timer = self.create_timer(0.1, self.control_loop)
 
     def tag_pose_callback(self, msg: PoseStamped):
-        """
-        Updates tag position published by the vision node.
-        """
-
+        """Updates tag position published by the vision node."""
         self.target_visible = True
+        self.last_tag_time = self.get_clock().now()
         self.target_x_offset = msg.pose.position.x
         self.target_z_dist = msg.pose.position.z
 
     def tag_id_callback(self, msg: Int32):
-        """
-        Updates tag ID published by the vision node.
-        """
+        """Updates tag ID published by the vision node."""
         self.target_id = msg.data
 
     def control_loop(self):
         """Main State Machine Loop."""
 
+        # Timeout: Mark invisible if no tag frame received in over 0.5s
+        time_since_seen = (self.get_clock().now() - self.last_tag_time).nanoseconds / 1e9
+        if time_since_seen > 2:
+            self.target_visible = False
+
         # State 1 - SEARCHING
-        # Rotate Base until tag is spotted
         if self.state == State.SEARCHING:
-            
             if not self.target_visible:
                 self.get_logger().info("Searching for paper bag...", throttle_duration_sec=2)
-                self.robot.base.drive(linear=0.0, angular=0.3)  # Rotate slowly
-            
+                self.robot.base.drive(linear=0.0, angular=0.3)
             else:
                 self.get_logger().info("Tag spotted! Switching to APPROACHING.")
                 self.robot.base.stop()
                 self.state = State.APPROACHING
 
         # STATE 2: APPROACHING 
-        # P-Control centering and forward motion
         elif self.state == State.APPROACHING:
             if not self.target_visible:
                 self.get_logger().warn("Lost sight of tag! Returning to SEARCHING.")
                 self.state = State.SEARCHING
                 return
 
-            # Proportional steering & distance control
-            angular_speed = -self.KP_ANGULAR * self.target_x_offset
             dist_error = self.target_z_dist - self.PICKUP_DISTANCE
-            linear_speed = self.KP_LINEAR * dist_error
+            self.get_logger().info(
+                f"z={self.target_z_dist:.3f} x_off={self.target_x_offset:.3f} dist_err={dist_error:.3f}",
+                throttle_duration_sec=0.5
+            )
 
-            # Velocity safety limits
-            linear_speed = max(0.0, min(0.2, linear_speed))
-            angular_speed = max(-0.4, min(0.4, angular_speed))
 
-            # Threshold check: within pickup reach?
-            if dist_error <= 0.02:
+            # Stop condition: close enough and well-centered
+            if dist_error <= 0.02 and abs(self.target_x_offset) < 0.05:
                 self.get_logger().info("Reached target! Stopping base.")
                 self.robot.base.stop()
                 self.state = State.PICKING
-            else:
-                self.robot.base.drive(linear=linear_speed, angular=angular_speed)
+                return
 
-    
+            # Angular speed calculation
+            angular_speed = -self.KP_ANGULAR * self.target_x_offset
+            angular_speed = max(-0.4, min(0.4, angular_speed))
+
+            # Only drive forward once x_offset is within ~8cm of center
+            if abs(self.target_x_offset) > 0.08:
+                linear_speed = 0.0
+            else:
+                linear_speed = self.KP_LINEAR * dist_error
+                linear_speed = max(0.0, min(0.2, linear_speed))
+
+            self.robot.base.drive(linear=linear_speed, angular=angular_speed)
+
         # State 3: PICKING 
-        # Execute physical grab routine
         elif self.state == State.PICKING:
             self.get_logger().info("Picking up paper bag...")
             self.robot.arm.pick_can()
@@ -132,7 +128,6 @@ class ChallengeNode(Node):
             self.state = State.SORTING
 
         # State 4: SORTING
-        # Place based on Tag ID
         elif self.state == State.SORTING:
             self.get_logger().info(f"Sorting bag with Tag ID: {self.target_id}")
 
@@ -154,9 +149,6 @@ class ChallengeNode(Node):
             self.robot.base.stop()
             self.get_logger().info("Mission complete!", throttle_duration_sec=5)
 
-        # Reset flag for next loop iteration
-        self.target_visible = False
-
 
 def main(args=None):
     rclpy.init(args=args)
@@ -168,4 +160,3 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
-

@@ -1,0 +1,25 @@
+[0.780s] Invoking command in '/home/ri-one/ros2_apriltags_to_pickup/src/ros2_pickup_w_apriltags': PYTHONPATH=/home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/ros2_pickup_w_apriltags build --build-base /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build install --record /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/install.log --single-version-externally-managed install_data
+[1.094s] running egg_info
+[1.095s] writing ../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/PKG-INFO
+[1.095s] writing dependency_links to ../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/dependency_links.txt
+[1.095s] writing entry points to ../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/entry_points.txt
+[1.095s] writing requirements to ../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/requires.txt
+[1.096s] writing top-level names to ../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/top_level.txt
+[1.098s] reading manifest file '../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/SOURCES.txt'
+[1.098s] adding license file 'LICENSE'
+[1.099s] writing manifest file '../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/SOURCES.txt'
+[1.099s] running build
+[1.099s] running build_py
+[1.099s] running install
+[1.100s] running install_lib
+[1.101s] running install_data
+[1.101s] running install_egg_info
+[1.105s] removing '/home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags-0.0.0-py3.10.egg-info' (and everything under it)
+[1.105s] Copying ../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info to /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags-0.0.0-py3.10.egg-info
+[1.106s] running install_scripts
+[1.134s] Installing challenge_node script to /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/ros2_pickup_w_apriltags
+[1.134s] Installing detector_node script to /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/ros2_pickup_w_apriltags
+[1.134s] Installing driver_node script to /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/ros2_pickup_w_apriltags
+[1.134s] Installing gui_node script to /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/ros2_pickup_w_apriltags
+[1.135s] writing list of installed files to '/home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/install.log'
+[1.168s] Invoked command in '/home/ri-one/ros2_apriltags_to_pickup/src/ros2_pickup_w_apriltags' returned '0': PYTHONPATH=/home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/ros2_pickup_w_apriltags build --build-base /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build install --record /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/install.log --single-version-externally-managed install_data

@@ -18,10 +18,15 @@ class TagDetectorNode(Node):
         # ArUco dictionary setup
         self.dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
         self.parameters = cv2.aruco.DetectorParameters()
+        self.parameters.adaptiveThreshWinSizeMin = 3
+        self.parameters.adaptiveThreshWinSizeMax = 23
+        self.parameters.adaptiveThreshWinSizeStep = 10
+        self.parameters.minMarkerPerimeterRate = 0.02   # default 0.03 — allow smaller markers
+        self.parameters.polygonalApproxAccuracyRate = 0.05
         self.detector = cv2.aruco.ArucoDetector(self.dictionary, self.parameters)
-        
+                
         # Camera intrinsics (approximate defaults for standard webcam)
-        self.camera_matrix = np.array([[600, 0, 320], [0, 600, 240], [0, 0, 1]], dtype=np.float32)
+        self.camera_matrix = np.array([[300, 0, 160], [0, 300, 120], [0, 0, 1]], dtype=np.float32)
         self.dist_coeffs = np.zeros((4, 1), dtype=np.float32)
         self.MARKER_SIZE = 0.05  # 50mm = 0.05 meters
 

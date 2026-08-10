@@ -18,25 +18,33 @@ class TagDetectorNode(Node):
         # ArUco dictionary setup
         self.dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
         self.parameters = cv2.aruco.DetectorParameters()
+        self.parameters.adaptiveThreshWinSizeMin = 3
+        self.parameters.adaptiveThreshWinSizeMax = 23
+        self.parameters.adaptiveThreshWinSizeStep = 10
+        self.parameters.minMarkerPerimeterRate = 0.02   # default 0.03 — allow smaller markers
+        self.parameters.polygonalApproxAccuracyRate = 0.05
         self.detector = cv2.aruco.ArucoDetector(self.dictionary, self.parameters)
-        
+                
         # Camera intrinsics (approximate defaults for standard webcam)
-        self.camera_matrix = np.array([[600, 0, 320], [0, 600, 240], [0, 0, 1]], dtype=np.float32)
+        self.camera_matrix = np.array([[300, 0, 160], [0, 300, 120], [0, 0, 1]], dtype=np.float32)
         self.dist_coeffs = np.zeros((4, 1), dtype=np.float32)
         self.MARKER_SIZE = 0.05  # 50mm = 0.05 meters
 
         self.image_sub = self.create_subscription(
             Image, "/image_raw", self.image_callback, 10
         )
+
         self.pose_pub = self.create_publisher(PoseStamped, "/tag_pose", 10)
         self.id_pub = self.create_publisher(Int32, "/tag_id", 10)
 
     def image_callback(self, msg):
+
         frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         corners, ids, _ = self.detector.detectMarkers(gray)
 
         if ids is not None and len(ids) > 0:
+            
             # Estimate pose of the first detected marker
             rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
                 corners, self.MARKER_SIZE, self.camera_matrix, self.dist_coeffs
