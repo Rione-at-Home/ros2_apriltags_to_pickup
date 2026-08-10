@@ -32,10 +32,8 @@ class ChallengeNode(Node):
     def __init__(self):
         super().__init__("challenge_node")
 
-        # Initialize high-level robot controller interface
         self.robot = Robot(self)
 
-        # State machine tracking
         self.state = State.SEARCHING
 
         # Camera feedback data
@@ -69,33 +67,38 @@ class ChallengeNode(Node):
         self.timer = self.create_timer(0.1, self.control_loop)
 
     def tag_pose_callback(self, msg: PoseStamped):
-        """Updates tag position published by the vision node."""
+        """
+        Updates tag position published by the vision node.
+        """
+
         self.target_visible = True
         self.target_x_offset = msg.pose.position.x
         self.target_z_dist = msg.pose.position.z
 
     def tag_id_callback(self, msg: Int32):
-        """Updates tag ID published by the vision node."""
+        """
+        Updates tag ID published by the vision node.
+        """
         self.target_id = msg.data
 
     def control_loop(self):
         """Main State Machine Loop."""
 
-        # -------------------------------------------------------------
-        # STATE 1: SEARCHING - Rotate base until tag is spotted
-        # -------------------------------------------------------------
+        # State 1 - SEARCHING
+        # Rotate Base until tag is spotted
         if self.state == State.SEARCHING:
+            
             if not self.target_visible:
                 self.get_logger().info("Searching for paper bag...", throttle_duration_sec=2)
                 self.robot.base.drive(linear=0.0, angular=0.3)  # Rotate slowly
+            
             else:
                 self.get_logger().info("Tag spotted! Switching to APPROACHING.")
                 self.robot.base.stop()
                 self.state = State.APPROACHING
 
-        # -------------------------------------------------------------
-        # STATE 2: APPROACHING - P-Control centering and forward motion
-        # -------------------------------------------------------------
+        # STATE 2: APPROACHING 
+        # P-Control centering and forward motion
         elif self.state == State.APPROACHING:
             if not self.target_visible:
                 self.get_logger().warn("Lost sight of tag! Returning to SEARCHING.")
@@ -119,18 +122,17 @@ class ChallengeNode(Node):
             else:
                 self.robot.base.drive(linear=linear_speed, angular=angular_speed)
 
-        # -------------------------------------------------------------
-        # STATE 3: PICKING - Execute physical grab routine
-        # -------------------------------------------------------------
+    
+        # State 3: PICKING 
+        # Execute physical grab routine
         elif self.state == State.PICKING:
             self.get_logger().info("Picking up paper bag...")
             self.robot.arm.pick_can()
             self.robot.arm.lift()
             self.state = State.SORTING
 
-        # -------------------------------------------------------------
-        # STATE 4: SORTING - Place based on Tag ID
-        # -------------------------------------------------------------
+        # State 4: SORTING
+        # Place based on Tag ID
         elif self.state == State.SORTING:
             self.get_logger().info(f"Sorting bag with Tag ID: {self.target_id}")
 
@@ -147,9 +149,7 @@ class ChallengeNode(Node):
             self.robot.arm.home()
             self.state = State.FINISHED
 
-        # -------------------------------------------------------------
-        # STATE 5: FINISHED
-        # -------------------------------------------------------------
+        # Stage 5: Finished
         elif self.state == State.FINISHED:
             self.robot.base.stop()
             self.get_logger().info("Mission complete!", throttle_duration_sec=5)
