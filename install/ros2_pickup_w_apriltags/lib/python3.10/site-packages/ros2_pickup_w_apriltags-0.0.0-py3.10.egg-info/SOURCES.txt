@@ -19,6 +19,7 @@ ros2_pickup_w_apriltags/crane_driver_node.py
 ros2_pickup_w_apriltags/gui.py
 ros2_pickup_w_apriltags/poses.py
 ros2_pickup_w_apriltags/robot.py
+ros2_pickup_w_apriltags/tag_detector_node.py
 test/test_copyright.py
 test/test_flake8.py
 test/test_pep257.py

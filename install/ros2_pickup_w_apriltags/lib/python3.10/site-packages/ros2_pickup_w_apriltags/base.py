@@ -80,9 +80,6 @@ class BaseController:
 
         self.drive(angular=self.angular_speed)
 
-        time.sleep(duration)
-
-        self.stop()
 
     def right(self, angle_deg):
 
@@ -92,9 +89,6 @@ class BaseController:
 
         self.drive(angular=-self.angular_speed)
 
-        time.sleep(duration)
-
-        self.stop()
 
     def wait(self, seconds):
 
