@@ -20,6 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'driver_node = ros2_pickup_w_apriltags.crane_driver_node:main',
+            'gui_node = ros2_pickup_w_apriltags.gui:main',
+            'challenge_node = ros2_pickup_w_apriltags.challenge_node:main',
         ],
     },
 )
