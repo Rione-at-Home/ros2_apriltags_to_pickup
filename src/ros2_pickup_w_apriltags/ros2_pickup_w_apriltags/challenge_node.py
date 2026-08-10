@@ -7,62 +7,45 @@
 #  robot and provides a template for implementing the challenge solution.
 #
 #
-
+import enum
 import rclpy
 from rclpy.node import Node
 import time
 
+from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Int32
+
 from .robot import Robot
+
+class State(enum.Enum):
+    SEARCHING = 1
+    APPROACHING = 2
+    PICKING = 3
+    SORTING = 4
+    FINISHED = 5
 
 
 class ChallengeNode(Node):
 
     def __init__(self):
+
         super().__init__("challenge_node")
 
         self.robot = Robot(self)
 
-        self.get_logger().info("Starting challenge!")
 
-        self.run()
+        # Camera Feedback fields
+        self.target_visible = False
+        self.target_x_offset = 0.0
+        self.target_z_dist = 0.0
+        self.target_id = -1
 
-    def run(self):
-        """
-        Write your challenge solution here.
 
-        Available commands:
+        # Control gains and thresholds
+        self.PICKUP_DISTANCE = 0.35
+        self.KP_ANGULAR = 0.8
 
-        Base:
-            self.robot.base.forward(distance_m)
-            self.robot.base.backward(distance_m)
-            self.robot.base.left(angle_deg)
-            self.robot.base.right(angle_deg)
-            self.robot.base.wait(seconds)
-
-        Arm:
-            self.robot.arm.home()
-            self.robot.arm.pick_can()
-            self.robot.arm.lift()
-            self.robot.arm.place_left()
-            self.robot.arm.place_right()
-            self.robot.arm.catapult()
-        """
-        
-        
-        #
-        # Example program
-        #
-
-        #self.get_logger().info("Running example!")
-
-        self.robot.arm.custom1()
-        self.robot.base.forward(0.70)
-        self.robot.arm.customgrab()
-        self.robot.base.forward(0.40)
-        for i in range(1, 57):
-            self.robot.base.right(10)
-        self.robot.base.forward(0.20)
-        self.robot.arm.custom1()
+    
 
        
 

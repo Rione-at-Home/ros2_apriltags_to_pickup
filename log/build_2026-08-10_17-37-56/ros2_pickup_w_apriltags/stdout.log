@@ -1,0 +1,46 @@
+running egg_info
+writing ../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/PKG-INFO
+writing dependency_links to ../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/dependency_links.txt
+writing entry points to ../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/entry_points.txt
+writing requirements to ../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/requires.txt
+writing top-level names to ../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/top_level.txt
+reading manifest file '../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/SOURCES.txt'
+adding license file 'LICENSE'
+writing manifest file '../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info/SOURCES.txt'
+running build
+running build_py
+copying ros2_pickup_w_apriltags/poses.py -> /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags
+copying ros2_pickup_w_apriltags/gui.py -> /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags
+copying ros2_pickup_w_apriltags/__init__ copy.py -> /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags
+copying ros2_pickup_w_apriltags/arm.py -> /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags
+copying ros2_pickup_w_apriltags/challenge_node.py -> /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags
+copying ros2_pickup_w_apriltags/robot.py -> /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags
+copying ros2_pickup_w_apriltags/crane_driver_node.py -> /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags
+copying ros2_pickup_w_apriltags/base.py -> /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags
+running install
+running install_lib
+copying /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags/poses.py -> /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags
+copying /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags/gui.py -> /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags
+copying /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags/__init__ copy.py -> /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags
+copying /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags/arm.py -> /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags
+copying /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags/challenge_node.py -> /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags
+copying /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags/robot.py -> /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags
+copying /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags/crane_driver_node.py -> /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags
+copying /home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/build/lib/ros2_pickup_w_apriltags/base.py -> /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags
+byte-compiling /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags/poses.py to poses.cpython-310.pyc
+byte-compiling /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags/gui.py to gui.cpython-310.pyc
+byte-compiling /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags/__init__ copy.py to __init__ copy.cpython-310.pyc
+byte-compiling /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags/arm.py to arm.cpython-310.pyc
+byte-compiling /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags/challenge_node.py to challenge_node.cpython-310.pyc
+byte-compiling /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags/robot.py to robot.cpython-310.pyc
+byte-compiling /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags/crane_driver_node.py to crane_driver_node.cpython-310.pyc
+byte-compiling /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags/base.py to base.cpython-310.pyc
+running install_data
+running install_egg_info
+removing '/home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags-0.0.0-py3.10.egg-info' (and everything under it)
+Copying ../../build/ros2_pickup_w_apriltags/ros2_pickup_w_apriltags.egg-info to /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags-0.0.0-py3.10.egg-info
+running install_scripts
+Installing challenge_node script to /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/ros2_pickup_w_apriltags
+Installing driver_node script to /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/ros2_pickup_w_apriltags
+Installing gui_node script to /home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/ros2_pickup_w_apriltags
+writing list of installed files to '/home/ri-one/ros2_apriltags_to_pickup/build/ros2_pickup_w_apriltags/install.log'
