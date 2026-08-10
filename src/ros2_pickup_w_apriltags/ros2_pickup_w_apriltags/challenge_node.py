@@ -38,6 +38,12 @@ class ChallengeNode(Node):
         self.KP_ANGULAR = 0.8        # Steering P-gain
         self.KP_LINEAR = 0.4         # Drive P-gain
 
+        # With the tag detector now filtering to valid IDs and running
+        # tuned parameters, /tag_pose should arrive close to frame rate.
+        # 1.0s still gives some slack for a transient miss without being
+        # so long that a genuinely lost tag goes unnoticed.
+        self.LOST_TIMEOUT = 1.0
+
         # Subscriptions for Tag Detection Node
         self.pose_sub = self.create_subscription(
             PoseStamped,
@@ -71,9 +77,9 @@ class ChallengeNode(Node):
     def control_loop(self):
         """Main State Machine Loop."""
 
-        # Timeout: Mark invisible if no tag frame received in over 0.5s
+        # Timeout: Mark invisible if no tag frame received recently
         time_since_seen = (self.get_clock().now() - self.last_tag_time).nanoseconds / 1e9
-        if time_since_seen > 2:
+        if time_since_seen > self.LOST_TIMEOUT:
             self.target_visible = False
 
         # State 1 - SEARCHING
@@ -86,7 +92,7 @@ class ChallengeNode(Node):
                 self.robot.base.stop()
                 self.state = State.APPROACHING
 
-        # STATE 2: APPROACHING 
+        # STATE 2: APPROACHING
         elif self.state == State.APPROACHING:
             if not self.target_visible:
                 self.get_logger().warn("Lost sight of tag! Returning to SEARCHING.")
@@ -98,7 +104,6 @@ class ChallengeNode(Node):
                 f"z={self.target_z_dist:.3f} x_off={self.target_x_offset:.3f} dist_err={dist_error:.3f}",
                 throttle_duration_sec=0.5
             )
-
 
             # Stop condition: close enough and well-centered
             if dist_error <= 0.02 and abs(self.target_x_offset) < 0.05:
@@ -120,7 +125,7 @@ class ChallengeNode(Node):
 
             self.robot.base.drive(linear=linear_speed, angular=angular_speed)
 
-        # State 3: PICKING 
+        # State 3: PICKING
         elif self.state == State.PICKING:
             self.get_logger().info("Picking up paper bag...")
             self.robot.arm.pick_can()
