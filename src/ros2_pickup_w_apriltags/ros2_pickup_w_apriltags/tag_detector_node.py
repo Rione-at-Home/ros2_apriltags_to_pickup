@@ -28,15 +28,18 @@ class TagDetectorNode(Node):
         self.image_sub = self.create_subscription(
             Image, "/image_raw", self.image_callback, 10
         )
+
         self.pose_pub = self.create_publisher(PoseStamped, "/tag_pose", 10)
         self.id_pub = self.create_publisher(Int32, "/tag_id", 10)
 
     def image_callback(self, msg):
+
         frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         corners, ids, _ = self.detector.detectMarkers(gray)
 
         if ids is not None and len(ids) > 0:
+            
             # Estimate pose of the first detected marker
             rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(
                 corners, self.MARKER_SIZE, self.camera_matrix, self.dist_coeffs
