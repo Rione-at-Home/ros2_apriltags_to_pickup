@@ -1,0 +1,5 @@
+  File "/home/ri-one/ros2_apriltags_to_pickup/install/ros2_pickup_w_apriltags/lib/python3.10/site-packages/ros2_pickup_w_apriltags/tag_detector_node.py", line 65
+    self.get_logger().info(f"Frame shape: {frame.shape}") right below frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+                                                          ^^^^^
+SyntaxError: invalid syntax
+

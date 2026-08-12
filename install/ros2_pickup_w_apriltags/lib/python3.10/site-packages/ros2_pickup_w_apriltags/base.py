@@ -73,12 +73,9 @@ class BaseController:
         self.driveTime(seconds=duration,linear=-self.linear_speed)
 
     def left(self, angle_deg):
-
         angle_rad = math.radians(angle_deg)
-
         duration = angle_rad / self.angular_speed
-
-        self.drive(angular=self.angular_speed)
+        self.driveTime(seconds=duration, angular=self.angular_speed)
 
 
     def right(self, angle_deg):
