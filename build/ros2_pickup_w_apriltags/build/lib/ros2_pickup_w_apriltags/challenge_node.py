@@ -38,6 +38,12 @@ class ChallengeNode(Node):
         self.KP_ANGULAR = 0.8        # Steering P-gain
         self.KP_LINEAR = 0.4         # Drive P-gain
 
+        # With the tag detector now filtering to valid IDs and running
+        # tuned parameters, /tag_pose should arrive close to frame rate.
+        # 1.0s still gives some slack for a transient miss without being
+        # so long that a genuinely lost tag goes unnoticed.
+        self.LOST_TIMEOUT = 1.0
+
         # Subscriptions for Tag Detection Node
         self.pose_sub = self.create_subscription(
             PoseStamped,
@@ -71,9 +77,9 @@ class ChallengeNode(Node):
     def control_loop(self):
         """Main State Machine Loop."""
 
-        # Timeout: Mark invisible if no tag frame received in over 0.5s
+        # Timeout: Mark invisible if no tag frame received recently
         time_since_seen = (self.get_clock().now() - self.last_tag_time).nanoseconds / 1e9
-        if time_since_seen > 2:
+        if time_since_seen > self.LOST_TIMEOUT:
             self.target_visible = False
 
         # State 1 - SEARCHING
@@ -86,7 +92,7 @@ class ChallengeNode(Node):
                 self.robot.base.stop()
                 self.state = State.APPROACHING
 
-        # STATE 2: APPROACHING 
+        # STATE 2: APPROACHING
         elif self.state == State.APPROACHING:
             if not self.target_visible:
                 self.get_logger().warn("Lost sight of tag! Returning to SEARCHING.")
@@ -94,25 +100,28 @@ class ChallengeNode(Node):
                 return
 
             dist_error = self.target_z_dist - self.PICKUP_DISTANCE
+            
+            # Calculate angle to the tag (cancels out Z-depth hallucination errors)
+            angle_error = self.target_x_offset / self.target_z_dist
+            
             self.get_logger().info(
-                f"z={self.target_z_dist:.3f} x_off={self.target_x_offset:.3f} dist_err={dist_error:.3f}",
+                f"z={self.target_z_dist:.3f} angle_err={angle_error:.3f} dist_err={dist_error:.3f}",
                 throttle_duration_sec=0.5
             )
 
-
-            # Stop condition: close enough and well-centered
-            if dist_error <= 0.02 and abs(self.target_x_offset) < 0.05:
+            # Stop condition: close enough and reasonably centered
+            if dist_error <= 0.02 and abs(angle_error) < 0.15:
                 self.get_logger().info("Reached target! Stopping base.")
                 self.robot.base.stop()
                 self.state = State.PICKING
                 return
 
-            # Angular speed calculation
-            angular_speed = -self.KP_ANGULAR * self.target_x_offset
+            # Angular speed calculation based on angle rather than raw offset
+            angular_speed = -self.KP_ANGULAR * angle_error
             angular_speed = max(-0.4, min(0.4, angular_speed))
 
-            # Only drive forward once x_offset is within ~8cm of center
-            if abs(self.target_x_offset) > 0.08:
+            # Only drive forward once the tag is within ~11 degrees (0.2 radians) of center
+            if abs(angle_error) > 0.2:
                 linear_speed = 0.0
             else:
                 linear_speed = self.KP_LINEAR * dist_error
@@ -120,7 +129,7 @@ class ChallengeNode(Node):
 
             self.robot.base.drive(linear=linear_speed, angular=angular_speed)
 
-        # State 3: PICKING 
+        # State 3: PICKING
         elif self.state == State.PICKING:
             self.get_logger().info("Picking up paper bag...")
             self.robot.arm.pick_can()
@@ -136,6 +145,9 @@ class ChallengeNode(Node):
                 self.robot.arm.place_left()
             elif self.target_id == 1:
                 self.get_logger().info("Tag 1: Placing Right")
+                self.robot.arm.place_right()
+            elif self.target_id == 17:  
+                self.get_logger().info("Tag 17: Placing Right") 
                 self.robot.arm.place_right()
             else:
                 self.get_logger().warn("Unknown Tag ID! Defaulting to Left.")
