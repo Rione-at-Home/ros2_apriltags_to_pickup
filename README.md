@@ -699,14 +699,37 @@ Possible improvements include:
 
 ---
 
-# License
+## Setup & Launch
 
-Add your project license here.
+### 1. USB Camera Driver Node
 
-For example:
-
-```text
-MIT License
+```bash
+ros2 run v4l2_camera v4l2_camera_node --ros-args -p video_device:=/dev/video2 -p pixel_format:=YUYV -p image_size:="[640,480]" -p time_per_frame:="[1,5]"
 ```
 
-or use the license required by your course/project.
+### 2. Kobuki Driver Node
+
+```bash
+ros2 run kobuki_node kobuki_ros_node --ros-args -p device_port:=/dev/ttyUSB0
+```
+
+### 3. Arm Driver Node
+
+```bash
+ros2 run ros2_pickup_w_apriltags driver_node 
+```
+
+### 4. Challenge Node
+
+```bash
+ros2 run ros2_pickup_w_apriltags challenge_node 
+```
+
+### 5. Detector Node
+
+```bash
+ros2 run ros2_pickup_w_apriltags detector_node 
+```
+
+
+
