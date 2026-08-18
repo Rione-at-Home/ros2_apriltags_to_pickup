@@ -34,7 +34,7 @@ class ChallengeNode(Node):
         self.target_id = -1          # Tag ID (0 = Left/Recycling, 1 = Right/Trash)
 
         # Control gains & thresholds
-        self.PICKUP_DISTANCE = 0.35  # Stopping distance for Crane+ arm reach
+        self.PICKUP_DISTANCE = 0.11  # Stopping distance for Crane+ arm reach
         self.KP_ANGULAR = 0.8        # Steering P-gain
         self.KP_LINEAR = 0.4         # Drive P-gain
 
@@ -110,7 +110,7 @@ class ChallengeNode(Node):
             )
 
             # Stop condition: close enough and reasonably centered
-            if dist_error <= 0.02 and abs(angle_error) < 0.15:
+            if dist_error <= 0.1 and abs(angle_error) < 0.15:
                 self.get_logger().info("Reached target! Stopping base.")
                 self.robot.base.stop()
                 self.state = State.PICKING
@@ -132,8 +132,8 @@ class ChallengeNode(Node):
         # State 3: PICKING
         elif self.state == State.PICKING:
             self.get_logger().info("Picking up paper bag...")
-            self.robot.arm.pick_can()
-            self.robot.arm.lift()
+            self.robot.arm.grab_bag()
+            self.robot.arm.lift_bag()
             self.state = State.SORTING
 
         # State 4: SORTING
@@ -142,18 +142,18 @@ class ChallengeNode(Node):
 
             if self.target_id == 0:
                 self.get_logger().info("Tag 0: Placing Left")
-                self.robot.arm.place_left()
+                self.robot.arm.rotate_left_bag()
             elif self.target_id == 1:
                 self.get_logger().info("Tag 1: Placing Right")
-                self.robot.arm.place_right()
+                self.robot.arm.rotate_right_bag()
             elif self.target_id == 17:  
                 self.get_logger().info("Tag 17: Placing Right") 
-                self.robot.arm.place_right()
+                self.robot.arm.rotate_right_bag()
             else:
                 self.get_logger().warn("Unknown Tag ID! Defaulting to Left.")
-                self.robot.arm.place_left()
+                self.robot.arm.rotate_left_bag()
 
-            self.robot.arm.home()
+            self.robot.arm.sleep_camera()
             self.state = State.FINISHED
 
         # Stage 5: Finished

@@ -110,4 +110,22 @@ class ArmController:
     def customgrab(self):
         self.move_and_wait(poses.CUSTOMGRAB)
 
+    def grab_bag(self):
+        self.move_and_wait(poses.BAGGING)
+        self.move_and_wait(poses.BAGGED)
+
+    def lift_bag(self):
+        self.move_and_wait(poses.AIRBAG)
+
+    def rotate_right_bag(self):
+        self.move_and_wait(poses.RIGHTY)
+        self.move_and_wait(poses.R_BAGDOWN)
+
+    def rotate_left_bag(self):
+        self.move_and_wait(poses.LEFTY)
+        self.move_and_wait(poses.L_BAGDOWN)
+
+    def sleep_camera(self):
+        self.move_and_wait(poses.ORIGIN)
+
     
