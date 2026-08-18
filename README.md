@@ -1,735 +1,220 @@
-# ros2_apriltags_to_pickup
+# Trash Sorting Robot - Project Guide
 
-## ROS 2 Challenge Node – ArUco Detection & Robot Sorting
+Welcome to the project. Your robot's job: search for a tagged trash
+item, approach it, pick it up, identify which category it belongs to,
+and place it in the correct bin.
 
-This project implements a ROS 2 robot challenge where a robot uses a camera to detect an **ArUco marker**, approaches the detected target, picks it up, and sorts it to the left or right depending on the marker ID.
+The vision system (tag detection + category classification) is already
+finished and handed to you as-is - you shouldn't need to modify it. The
+rest of this repo (last week's competition code) is given to you as a
+**reference implementation**, not something to copy wholesale. You'll
+be building your own version, in your own repo, with your own package.
+Understanding *why* each piece works matters more than having working
+code you didn't write yourselves - you'll be tuning gains, adding
+poses, and extending the sorting logic for new categories, and that's
+much harder to do with code you don't understand.
 
-The system is split into two ROS 2 nodes:
+## 1. Creating your ROS2 package
 
-1. **`TagDetectorNode`** – Processes camera images and detects ArUco markers.
-2. **`ChallengeNode`** – Controls the robot using a state machine and the marker information.
+Start a workspace and package from scratch:
 
----
+```bash
+mkdir -p ~/trash_sorter_ws/src
+cd ~/trash_sorter_ws/src
 
-## Overview
-
-The robot follows this sequence:
-
-```text
-Camera
-   │
-   ▼
-TagDetectorNode
-   │
-   ├── /tag_pose ──► Target position
-   │
-   └── /tag_id ───► Target ID
-                       │
-                       ▼
-                ChallengeNode
-                       │
-          ┌────────────┴────────────┐
-          │                         │
-          ▼                         ▼
-      Robot Base                Robot Arm
-          │                         │
-      Approach                 Pick & Sort
-          │                         │
-          └────────────┬────────────┘
-                       ▼
-                    FINISHED
+ros2 pkg create --build-type ament_python trash_sorter \
+  --dependencies rclpy std_msgs geometry_msgs sensor_msgs cv_bridge
 ```
 
-The robot initially rotates until an ArUco marker is detected. Once detected, it uses proportional control to align itself with the marker and drive toward it. When the robot reaches the required distance, the arm picks up the object and places it according to the marker ID.
+This creates:
 
----
-
-# Nodes
-
-## 1. `TagDetectorNode`
-
-The `TagDetectorNode` is responsible for:
-
-* Receiving camera images.
-* Converting ROS images to OpenCV images.
-* Detecting ArUco markers.
-* Estimating the marker's position relative to the camera.
-* Publishing the marker position.
-* Publishing the marker ID.
-
-### Input
-
-| Topic        | Message Type            | Description  |
-| ------------ | ----------------------- | ------------ |
-| `/image_raw` | `sensor_msgs/msg/Image` | Camera image |
-
-### Outputs
-
-| Topic       | Message Type                    | Description                     |
-| ----------- | ------------------------------- | ------------------------------- |
-| `/tag_pose` | `geometry_msgs/msg/PoseStamped` | Position of the detected marker |
-| `/tag_id`   | `std_msgs/msg/Int32`            | ID of the detected marker       |
-
----
-
-## 2. `ChallengeNode`
-
-The `ChallengeNode` controls the robot and implements the main challenge state machine.
-
-It receives the marker position and ID from `TagDetectorNode` and controls:
-
-* The robot base.
-* The robot arm.
-* Searching behavior.
-* Target approach.
-* Picking.
-* Sorting.
-* Mission completion.
-
----
-
-# State Machine
-
-The challenge is implemented using five states.
-
-```text
-             ┌─────────────┐
-             │  SEARCHING  │
-             └──────┬──────┘
-                    │
-              Tag detected
-                    │
-                    ▼
-             ┌─────────────┐
-             │ APPROACHING │
-             └──────┬──────┘
-                    │
-            Within pickup distance
-                    │
-                    ▼
-              ┌─────────┐
-              │ PICKING │
-              └────┬────┘
-                   │
-               Pick complete
-                   │
-                   ▼
-              ┌─────────┐
-              │ SORTING │
-              └────┬────┘
-                   │
-             Placement complete
-                   │
-                   ▼
-             ┌──────────┐
-             │ FINISHED │
-             └──────────┘
 ```
-
-### `SEARCHING`
-
-The robot rotates its base slowly until an ArUco marker is detected.
-
-```python
-self.robot.base.drive(linear=0.0, angular=0.3)
-```
-
-When a marker is detected, the robot stops and changes to `APPROACHING`.
-
----
-
-### `APPROACHING`
-
-The robot uses proportional control to:
-
-1. Center itself relative to the marker.
-2. Drive toward the marker.
-3. Stop when it reaches the pickup distance.
-
-The angular velocity is calculated using:
-
-```python
-angular_speed = -self.KP_ANGULAR * self.target_x_offset
-```
-
-The linear velocity is calculated using:
-
-```python
-dist_error = self.target_z_dist - self.PICKUP_DISTANCE
-linear_speed = self.KP_LINEAR * dist_error
-```
-
-Velocity limits are applied for safety:
-
-```python
-linear_speed = max(0.0, min(0.2, linear_speed))
-angular_speed = max(-0.4, min(0.4, angular_speed))
-```
-
-The default pickup distance is:
-
-```python
-PICKUP_DISTANCE = 0.35
-```
-
-If the distance error is less than or equal to `0.02 m`, the robot stops and begins picking.
-
----
-
-### `PICKING`
-
-The robot performs the arm pickup sequence:
-
-```python
-self.robot.arm.pick_can()
-self.robot.arm.lift()
-```
-
-After picking up the object, the state changes to `SORTING`.
-
----
-
-### `SORTING`
-
-The marker ID determines where the object is placed.
-
-| Marker ID | Destination    |
-| --------: | -------------- |
-|       `0` | Left           |
-|       `1` | Right          |
-|     Other | Left (default) |
-
-For marker ID `0`:
-
-```python
-self.robot.arm.place_left()
-```
-
-For marker ID `1`:
-
-```python
-self.robot.arm.place_right()
-```
-
-After placement, the arm returns to its home position:
-
-```python
-self.robot.arm.home()
-```
-
-The state then changes to `FINISHED`.
-
----
-
-### `FINISHED`
-
-The robot stops its base and reports that the mission is complete.
-
-```python
-self.robot.base.stop()
-```
-
----
-
-# Parameters and Control Values
-
-The main control parameters are defined in `ChallengeNode`:
-
-| Parameter             |     Default | Description                                             |
-| --------------------- | ----------: | ------------------------------------------------------- |
-| `PICKUP_DISTANCE`     |    `0.35 m` | Distance at which the robot stops to pick up the object |
-| `KP_ANGULAR`          |       `0.8` | Proportional gain for angular steering                  |
-| `KP_LINEAR`           |       `0.4` | Proportional gain for forward movement                  |
-| Maximum linear speed  |   `0.2 m/s` | Safety limit for forward motion                         |
-| Maximum angular speed | `0.4 rad/s` | Safety limit for rotation                               |
-| Control frequency     |     `10 Hz` | Main control loop frequency                             |
-
----
-
-# ArUco Marker Detection
-
-The vision node uses OpenCV's ArUco detector.
-
-The configured dictionary is:
-
-```python
-cv2.aruco.DICT_4X4_50
-```
-
-The expected marker size is:
-
-```python
-MARKER_SIZE = 0.05
-```
-
-This corresponds to a marker size of:
-
-```text
-50 mm = 0.05 m
-```
-
-The detector estimates the marker position as:
-
-```text
-[x, y, z]
-```
-
-relative to the camera.
-
-These values are published in a `PoseStamped` message.
-
----
-
-# Camera Configuration
-
-The current implementation uses approximate camera intrinsics:
-
-```python
-camera_matrix = [
-    [600,   0, 320],
-    [  0, 600, 240],
-    [  0,   0,   1]
-]
-```
-
-The distortion coefficients are currently assumed to be zero:
-
-```python
-dist_coeffs = np.zeros((4, 1), dtype=np.float32)
-```
-
-These values are intended as defaults for a standard webcam.
-
-For improved accuracy, especially for precise distance estimation, the camera should ideally be calibrated and the real camera matrix and distortion coefficients should be used.
-
----
-
-# ROS 2 Topics
-
-The complete communication between the nodes is:
-
-```text
-/image_raw
-     │
-     ▼
-TagDetectorNode
-     │
-     ├──────────────► /tag_pose
-     │
-     └──────────────► /tag_id
-                          │
-                          ▼
-                    ChallengeNode
-                          │
-                          ▼
-                       Robot
-```
-
-### `/image_raw`
-
-**Type:**
-
-```text
-sensor_msgs/msg/Image
-```
-
-Camera images are received by `TagDetectorNode`.
-
----
-
-### `/tag_pose`
-
-**Type:**
-
-```text
-geometry_msgs/msg/PoseStamped
-```
-
-Contains the estimated marker position.
-
-The position fields are used as:
-
-```text
-x = horizontal offset
-y = vertical position
-z = distance from camera
-```
-
-The challenge node primarily uses `x` and `z`.
-
----
-
-### `/tag_id`
-
-**Type:**
-
-```text
-std_msgs/msg/Int32
-```
-
-Contains the ID of the detected ArUco marker.
-
-The current sorting logic is:
-
-```text
-ID 0 → Left
-ID 1 → Right
-```
-
----
-
-# Dependencies
-
-The project requires:
-
-* ROS 2
-* Python 3
-* `rclpy`
-* OpenCV
-* NumPy
-* `cv_bridge`
-* `geometry_msgs`
-* `sensor_msgs`
-* `std_msgs`
-
-The robot-specific implementation must also provide the local `Robot` class:
-
-```python
-from .robot import Robot
-```
-
-The `Robot` class is expected to provide interfaces similar to:
-
-```python
-robot.base.drive()
-robot.base.stop()
-
-robot.arm.pick_can()
-robot.arm.lift()
-robot.arm.place_left()
-robot.arm.place_right()
-robot.arm.home()
-```
-
----
-
-# Suggested Package Structure
-
-A typical ROS 2 Python package could look like this:
-
-```text
-your_package/
+trash_sorter/
+├── trash_sorter/          <- your Python source files go here
+│   └── __init__.py
+├── resource/
+│   └── trash_sorter
 ├── package.xml
 ├── setup.py
-├── resource/
-│   └── your_package
-└── your_package/
-    ├── __init__.py
-    ├── challenge_node.py
-    ├── tag_detector_node.py
-    └── robot.py
+└── setup.cfg
 ```
 
----
+Every node you write goes inside the inner `trash_sorter/` folder
+(this is a common source of confusion - there are two folders with the
+same name, the outer one is the whole package, the inner one is the
+actual Python module).
 
-# Running the Nodes
+### Registering your nodes
 
-First, source your ROS 2 installation:
+Every node needs an entry in `setup.py` so `ros2 run` can find it.
+Open `setup.py` and add each node under `entry_points`:
 
-```bash
-source /opt/ros/<your_ros_distro>/setup.bash
+```python
+entry_points={
+    'console_scripts': [
+        'challenge_node = trash_sorter.challenge_node:main',
+        'tag_detector_node = trash_sorter.tag_detector_node:main',
+        'crane_driver_node = trash_sorter.crane_driver_node:main',
+        'gui = trash_sorter.gui:main',
+    ],
+},
 ```
 
-Then build the workspace:
+Whenever you add a new node file with its own `main()`, add a matching
+line here - if you forget this step, `ros2 run` won't find your node
+even though the file exists.
+
+### Building
+
+From the workspace root (not inside `src/`):
 
 ```bash
-cd ~/your_ros2_workspace
+cd ~/trash_sorter_ws
 colcon build
-```
-
-Source the workspace:
-
-```bash
 source install/setup.bash
 ```
 
-Start the camera/image source so that:
+You'll need to `source install/setup.bash` again in every new terminal
+you open (or add it to your `~/.bashrc`).
 
-```text
-/image_raw
+## 2. Package structure - what goes where
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `tag_detector_node.py` | Vision node - detects tags, publishes `/tag_pose` and `/tag_id` | **Given, finished.** Copy from the old repo as-is. |
+| `crane_driver_node.py` | Low-level driver - talks directly to the Dynamixel servos over serial | **Given, hardware-specific.** Reference/reuse as-is unless your hardware differs. |
+| `arm.py` | High-level arm interface (`pick_can()`, `place_left()`, etc.) - wraps raw joint commands into named actions | **Reference.** You'll extend this with new actions for your categories/bins. |
+| `base.py` | High-level base interface (`drive()`, `forward()`, `left()`, etc.) | **Reference.** Should mostly work as-is; understand it before touching it. |
+| `robot.py` | Thin wrapper that just bundles `ArmController` + `BaseController` together | **Reference.** Rarely needs changes. |
+| `poses.py` | Predefined joint-angle poses (in degrees) that `arm.py`'s actions move through | **You will rewrite this.** Last week's poses were tuned for 2 categories/2 bins. You have 3 (+1 stretch), so you need new placement poses for the new bin layout - see Section 5. |
+| `challenge_node.py` | The main state machine - SEARCHING → APPROACHING → PICKING → SORTING → FINISHED | **Skeleton with TODOs**, provided separately - see the project task list, not this file. |
+| `gui.py` | PyQt5 control panel with joint sliders and base movement buttons | **Debug tool only** - not part of the competition run. Use this to manually jog the arm and find new pose values for `poses.py`, and to test base movement in isolation. It does not contain any competition logic itself. |
+
+## 3. Running the system
+
+Launch order matters - the camera and driver need to be up before
+anything that depends on them.
+
+**Terminal 1 - camera:**
+```bash
+ros2 run v4l2_camera v4l2_camera_node --ros-args \
+  -p video_device:=/dev/video2 \
+  -p pixel_format:=YUYV \
+  -p image_size:="[320,240]"
 ```
 
-is being published.
+**Terminal 2 - arm driver:**
+```bash
+ros2 run trash_sorter crane_driver_node
+```
 
-Then run the tag detector:
+**Terminal 3 - tag detector:**
+```bash
+ros2 run trash_sorter tag_detector_node
+```
+
+**Terminal 4 - either the competition logic OR the debug GUI, not both:**
+```bash
+ros2 run trash_sorter challenge_node
+```
+```bash
+# OR, for manual pose tuning:
+ros2 run trash_sorter gui
+```
+Don't run `challenge_node` and `gui` at the same time - both create a
+`Robot` (arm + base) and will publish conflicting commands to the same
+topics if run together.
+
+## 4. Category mapping (from the vision system)
+
+| Tag ID | Category | Japanese |
+|--------|----------|----------|
+| 0 | Burnable | 可燃ごみ (kanenengomi) |
+| 1 | PET Bottle | ペットボトル (petbotoru) |
+| 2 | Can | 缶 (kan) |
+| 3 | Non-burnable *(stretch goal)* | 不燃ごみ (funenengomi) |
+
+`/tag_id` publishes this as a raw int - your `challenge_node`'s SORTING
+state is responsible for mapping each ID to an arm action and bin.
+
+## 5. Generating and printing tags
 
 ```bash
-ros2 run <your_package> tag_detector_node
+python3 generate_tags.py
 ```
 
-In another terminal, source the workspace again:
+Produces one PNG per category in `tags_output/`. Print each **at 100%
+scale / "actual size"** - never "fit to page". After printing, measure
+the black square with a ruler; it must be exactly 50mm. If it's off,
+either reprint at the correct scale or update `MARKER_SIZE` in
+`tag_detector_node.py` to match your actual printed size - a mismatch
+here biases every distance reading by the same proportion.
 
+## 6. Finding new arm poses
+
+Since you have more categories than last week, you'll need new
+placement poses (and possibly a new pick sequence if your item shape
+differs). Use `gui.py` for this:
+
+1. Run the GUI (`ros2 run trash_sorter gui`), with the arm powered and
+   the driver node running.
+2. Use the joint sliders to manually move the arm to the position you
+   want (e.g. hovering over a new bin).
+3. Read off the resulting joint angles from the value labels next to
+   each slider.
+4. Copy those degree values into a new list in `poses.py`, following
+   the existing style (base, shoulder, elbow, wrist, gripper).
+5. Add a corresponding method in `arm.py` (e.g. `place_center()`) that
+   moves through your new pose, following the pattern of
+   `place_left()`/`place_right()`.
+
+## 7. Troubleshooting
+
+**Detection is slow or drops out for seconds at a time.**
+Check the actual publish rate:
 ```bash
-source ~/your_ros2_workspace/install/setup.bash
+ros2 topic hz /tag_pose
 ```
+If this is far below the camera's frame rate, the most common cause is
+a QoS mismatch between the camera driver and the detector's
+subscription (already handled in the given `tag_detector_node.py`, but
+worth re-checking if you modify anything camera-related).
 
-Then start the challenge node:
-
+**Something doesn't seem to be receiving messages / nodes aren't talking to each other.**
 ```bash
-ros2 run <your_package> challenge_node
+rqt_graph
 ```
+This draws a live graph of every running node and the topics
+connecting them. It's the fastest way to spot an obvious wiring
+problem - a node that's supposed to be subscribed to something but
+isn't connected, a typo'd topic name, or a node that isn't running at
+all. Check this first before diving into code when something seems to
+"just not respond."
 
----
-
-# Testing the Topics
-
-You can check whether the camera is publishing images with:
-
+**You're not sure if the camera itself is working, independent of detection.**
 ```bash
-ros2 topic echo /image_raw
+ros2 run rqt_image_view rqt_image_view
 ```
-
-Check the detected marker pose:
-
-```bash
-ros2 topic echo /tag_pose
-```
-
-Check the detected marker ID:
-
-```bash
-ros2 topic echo /tag_id
-```
-
-You can also inspect the available topics with:
-
-```bash
-ros2 topic list
-```
-
----
-
-# Important Notes
-
-## Marker Detection
-
-The detector currently processes the **first detected marker**:
-
-```python
-tvec = tvecs[0][0]
-```
-
-and:
-
-```python
-id_msg.data = int(ids[0][0])
-```
-
-If multiple markers are visible, the current implementation does not select between them based on distance, position, or ID.
-
----
-
-## Marker Visibility
-
-`ChallengeNode` resets:
-
-```python
-self.target_visible = False
-```
-
-at the end of every control-loop iteration.
-
-This means the marker detector must continuously publish `/tag_pose` for the target to remain considered visible.
-
-If the vision node stops detecting the marker, the challenge node will eventually return to the `SEARCHING` state.
-
----
-
-## Camera Calibration
-
-The current camera matrix is approximate. For a real robot, camera calibration is recommended.
-
-An inaccurate camera matrix can result in incorrect distance estimates, which can affect:
-
-* Approach behavior.
-* Pickup distance.
-* Alignment.
-* Overall sorting accuracy.
-
----
-
-## Coordinate Frames
-
-The pose is published with:
-
-```python
-pose_msg.header.frame_id = "camera_frame"
-```
-
-The current implementation directly uses the camera-frame `x` and `z` values for robot control.
-
-If the camera is mounted at an angle or offset from the robot base, additional coordinate-frame transformations may be required.
-
----
-
-# Troubleshooting
-
-### No marker is detected
-
-Check that `/image_raw` is publishing:
-
-```bash
-ros2 topic list
-ros2 topic echo /image_raw
-```
-
-Also verify that:
-
-* The camera is working.
-* The marker uses the `DICT_4X4_50` dictionary.
-* The marker is clearly visible.
-* The marker is sufficiently large in the image.
-* Lighting is adequate.
-
----
-
-### Robot keeps rotating
-
-The robot remains in `SEARCHING` while:
-
-```python
-self.target_visible == False
-```
-
-If the detector is not publishing a valid pose, the robot will continue rotating.
-
-Check:
-
-```bash
-ros2 topic echo /tag_pose
-```
-
----
-
-### Robot approaches incorrectly
-
-The approach controller depends on:
-
-```python
-target_x_offset
-target_z_dist
-```
-
-If the robot steers in the wrong direction, check the sign convention for the camera's X axis.
-
-The angular control is:
-
-```python
-angular_speed = -self.KP_ANGULAR * self.target_x_offset
-```
-
-You may need to reverse the sign depending on the camera and robot coordinate conventions.
-
----
-
-### Distance is inaccurate
-
-The distance estimate depends on:
-
-```python
-MARKER_SIZE
-camera_matrix
-dist_coeffs
-```
-
-Make sure `MARKER_SIZE` exactly matches the physical marker size.
-
-For better accuracy, calibrate the camera and replace the approximate camera parameters.
-
----
-
-# Mission Summary
-
-The complete behavior can be summarized as:
-
-```text
-1. Start robot
-       ↓
-2. Search for ArUco marker
-       ↓
-3. Detect marker
-       ↓
-4. Center robot on marker
-       ↓
-5. Drive toward marker
-       ↓
-6. Stop at pickup distance
-       ↓
-7. Pick up object
-       ↓
-8. Lift object
-       ↓
-9. Read marker ID
-       ↓
-10. ID 0 → Place Left
-    ID 1 → Place Right
-       ↓
-11. Return arm to home
-       ↓
-12. Mission complete
-```
-
----
-
-# Future Improvements
-
-Possible improvements include:
-
-* Use proper camera calibration.
-* Add visualization of detected ArUco markers.
-* Handle multiple detected markers.
-* Select the closest marker instead of always using the first marker.
-* Add timeout handling if a marker is lost.
-* Add configurable ROS 2 parameters for control gains.
-* Add a dedicated `ERROR` state.
-* Add emergency-stop behavior.
-* Transform camera coordinates into the robot base frame using TF2.
-* Prevent repeated arm actions if the control loop executes multiple times in the same state.
-* Add launch files to start the camera, detector, and challenge node together.
-
----
-
-## Setup & Launch
-
-### 1. USB Camera Driver Node
-
-```bash
-ros2 run v4l2_camera v4l2_camera_node --ros-args -p video_device:=/dev/video2 -p pixel_format:=YUYV -p image_size:="[640,480]" -p time_per_frame:="[1,5]"
-```
-
-### 2. Kobuki Driver Node
-
-```bash
-ros2 run kobuki_node kobuki_ros_node --ros-args -p device_port:=/dev/ttyUSB0
-```
-
-### 3. Arm Driver Node
-
-```bash
-ros2 run ros2_pickup_w_apriltags driver_node 
-```
-
-### 4. Challenge Node
-
-```bash
-ros2 run ros2_pickup_w_apriltags challenge_node 
-```
-
-### 5. Detector Node
-
-```bash
-ros2 run ros2_pickup_w_apriltags detector_node 
-```
-
-
-
+Select `/image_raw` from the topic dropdown to view the raw camera
+feed directly, bypassing the detector entirely. Useful for isolating
+"is this a camera problem or a detection-logic problem" - if the raw
+feed looks fine here but detection still isn't working, the issue is
+downstream in `tag_detector_node.py` or your parameters, not the
+camera.
+
+**Distances/offsets look wrong or jump around unpredictably.**
+1. Confirm your printed marker is exactly 50mm (see Section 5).
+2. Check the log line printed on detector startup - it reports what
+   resolution the camera matrix was initialized for. Confirm it
+   matches your camera's actual output.
+3. If two different tags are visible in the same frame at once, the
+   detector always targets the closer one - use the detector's debug
+   window (or `rqt_image_view`) to confirm that's actually what's
+   happening rather than a false detection.
+
+**An unexpected/wrong category ID shows up.**
+The detector logs every raw detected ID (throttled to 2/sec), even IDs
+outside the known category list - watch this log to see if it's
+picking up something unintended (a QR code, glare, or unrelated
+pattern in the background). Only IDs 0-3 are ever published to
+`/tag_id`; anything else is logged but ignored.
